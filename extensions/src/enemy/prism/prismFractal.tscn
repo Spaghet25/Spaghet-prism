@@ -1,0 +1,52 @@
+[gd_scene load_steps=7 format=3 uid="uid://bld0apk8t6mlx"]
+
+[ext_resource type="Script" path="res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismFractal.gd" id="1_bsg0k"]
+[ext_resource type="Texture2D" uid="uid://dtse2qt5psbdr" path="res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismVariants/red.png" id="2_abccq"]
+[ext_resource type="Script" path="res://src/enemy/enemy.gd" id="3_xjge3"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_i0bmd"]
+size = Vector2(72.1248, 72.125)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_uqerm"]
+size = Vector2(72.1248, 72.125)
+
+[sub_resource type="Environment" id="Environment_5purn"]
+background_mode = 3
+glow_enabled = true
+glow_normalized = true
+glow_intensity = 1.0
+glow_strength = 0.95
+glow_blend_mode = 0
+glow_hdr_threshold = 0.8
+glow_hdr_scale = 0.7
+glow_map_strength = 1.0
+
+[node name="StaticBody2D" type="StaticBody2D" groups=["boss"]]
+script = ExtResource("1_bsg0k")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+scale = Vector2(0.9, 1)
+texture = ExtResource("2_abccq")
+
+[node name="collideShape" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(-2.26498e-06, 3.57628e-07)
+rotation = 0.785397
+shape = SubResource("RectangleShape2D_i0bmd")
+
+[node name="Enemy" type="Node" parent="."]
+script = ExtResource("3_xjge3")
+
+[node name="Area2D" type="Area2D" parent="."]
+visible = false
+collision_layer = 64
+collision_mask = 48
+
+[node name="detectShape" type="CollisionShape2D" parent="Area2D"]
+visible = false
+position = Vector2(1.60933e-06, -1.07288e-06)
+rotation = 0.785397
+shape = SubResource("RectangleShape2D_uqerm")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_5purn")

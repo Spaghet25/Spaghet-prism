@@ -1,0 +1,21 @@
+{
+	"name": "prism",
+	"namespace": "Spaghet",
+	"version_number": "1.0.0",
+	"description": "Adds the illuminating boss Prism",
+	"website_url": "",
+	"dependencies": ["ombrellus-modutils"],
+	"extra": {
+		"godot": {
+			"authors": ["Spaghet"],
+			"tags": ["bosses"],
+			"description_rich": "",
+			"optional_dependencies": [],
+			"load_before": [],
+			"incompatibilities": [],
+			"compatible_mod_loader_version": ["6.2.0"],
+			"compatible_game_version": ["3.2.1"],
+			"config_schema": {}
+		}
+	}
+}

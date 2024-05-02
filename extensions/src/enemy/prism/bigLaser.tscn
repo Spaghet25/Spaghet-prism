@@ -1,0 +1,33 @@
+[gd_scene load_steps=4 format=3 uid="uid://cky41w2qqmch8"]
+
+[ext_resource type="Script" path="res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/bigLaser.gd" id="1_rhfmb"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ishci"]
+resource_local_to_scene = true
+size = Vector2(2, 2)
+
+[sub_resource type="Environment" id="Environment_v8fq5"]
+background_mode = 3
+glow_enabled = true
+glow_normalized = true
+glow_intensity = 1.0
+glow_strength = 0.95
+glow_blend_mode = 0
+glow_hdr_threshold = 0.65
+glow_hdr_scale = 0.7
+glow_map_strength = 1.0
+
+[node name="BigLaser" type="StaticBody2D" groups=["enemy_laser"]]
+collision_layer = 1024
+collision_mask = 4096
+script = ExtResource("1_rhfmb")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+visible = false
+scale = Vector2(0.85, 0.85)
+
+[node name="laserShape" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_ishci")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_v8fq5")
