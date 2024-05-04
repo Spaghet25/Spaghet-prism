@@ -89,5 +89,9 @@ func _draw():
 	elif laserStage == 3:
 		var amount = pow(min(1, laserTimer / 0.3), 3.0)
 		var iAmount = 1.0 - amount
+		
 		draw_circle(64.0 * laserAngle, 0.5 * iAmount * 250.0, colorValue)
 		draw_line(64.0 * laserAngle, 3000.0 * laserAngle, colorValue, iAmount * 250.0)
+		
+		draw_circle(64.0 * laserAngle, 0.5 * iAmount * 175.0, Color.WHITE)
+		draw_line(64.0 * laserAngle, 2968.0 * laserAngle, Color.WHITE, iAmount * 175.0)

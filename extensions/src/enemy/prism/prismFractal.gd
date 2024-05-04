@@ -2,7 +2,7 @@ extends StaticBody2D
 
 var args := {
 	markedPlayer = null,
-	colorVar = 0
+	count = 0
 }
 
 var targetPlayer:Node2D
@@ -12,6 +12,8 @@ var prism:RigidBody2D
 
 var colorName := "red"
 var colorValue := Color(1, 1, 1)
+var shotRot := 0
+
 var coins := 2
 
 @onready var enemy = $Enemy
@@ -59,43 +61,52 @@ func _ready():
 	else:
 		targetPlayer = Global.player
 		
-	match args.colorVar:
+	match args.count:
 		0:
 			sprite.texture = preload("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismVariants/red.png")
 			colorName = "red"
 			colorValue = Color(1, 0, 0)
+			shotRot = 0
 		1:
 			sprite.texture = preload("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismVariants/blue.png")
 			colorName = "blue"
 			colorValue = Color(0, 0.14901961386204, 1)
+			shotRot = 0
 		2:
 			sprite.texture = preload("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismVariants/green.png")
 			colorName = "green"
 			colorValue = Color(0.32941177487373, 1, 0)
+			shotRot = 0
 		3:
 			sprite.texture = preload("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismVariants/orange.png")
 			colorName = "orange"
 			colorValue = Color(1, 0.41568627953529, 0)
+			shotRot = 1
 		4:
 			sprite.texture = preload("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismVariants/pink.png")
 			colorName = "pink"
 			colorValue = Color(1, 0.63137257099152, 0.91764706373215)
+			shotRot = 2
 		5:
 			sprite.texture = preload("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismVariants/purple.png")
 			colorName = "purple"
 			colorValue = Color(0.69803923368454, 0, 1)
+			shotRot = 3
 		6:
 			sprite.texture = preload("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismVariants/cyan.png")
 			colorName = "cyan"
 			colorValue = Color(0, 1, 1)
+			shotRot = 4
 		7:
 			sprite.texture = preload("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismVariants/turquoise.png")
 			colorName = "turquoise"
 			colorValue = Color(0, 1, 0.56470590829849)
+			shotRot = 5
 		8:
 			sprite.texture = preload("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismVariants/yellow.png")
 			colorName = "yellow"
 			colorValue = Color(1, 0.84705883264542, 0)
+			shotRot = 6
 	
 	fracBob = rng.randf_range(0, 9)
 	
@@ -116,6 +127,7 @@ func _ready():
 	window.add_child(windowCamera)
 	
 	enemy.spawn()
+
 func _physics_process(delta):
 	delta *= Global.timescale
 	self.delta = delta

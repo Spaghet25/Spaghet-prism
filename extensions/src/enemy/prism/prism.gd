@@ -47,7 +47,24 @@ var playerShootTimer := 0.0
 
 var difficultyScale := 0.0
 
-var cooldown := 8.0
+var cooldown := 10.0
+var callAtk := false
+var slowDown := 4.0
+
+var tpTimer := 0.5
+var tpPos := 0.0
+var isFinal := false
+
+@onready var dash_line = $dashLine
+@onready var dash_line_2 = $dashLine2
+var dashLinePoints:Array[Vector2] = []
+var dashLinePointsEx:Array = []
+
+var dashFrom := Vector2.ZERO
+var dashFromP := Vector2.ZERO
+var dashTo := Vector2.ZERO
+
+var dashPos := Vector2.ZERO
 
 var angle := Vector2.ZERO
 
@@ -78,6 +95,8 @@ var frozen := false
 var drainSpeed := 1.0
 
 var fractals:Array[StaticBody2D] = []
+var outerFractals:Array[StaticBody2D] = []
+
 var lastAlive := false
 
 func _ready():
@@ -86,6 +105,9 @@ func _ready():
 	for i in targetPlayer.get_children():
 		if i.get_name() == "Melee":
 			dist = 375.0
+			
+	dash_line.reparent.call_deferred(Global.gameArea, false)
+	dash_line_2.reparent.call_deferred(Global.gameArea, false)
 	
 	var pos = Game.randomSpawnLocation(Vector2(300, 300).x, 300.0)
 	position = pos
@@ -116,17 +138,18 @@ func spawnFractals():
 			markedPlayer = targetPlayer,
 			prism = self,
 			point = i,
-			colorVar = count
+			count = count
 		}))
 		count += 1
 		
 	for i in rotPivL.get_children():
-		fractals.append(Utils.spawn(load("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismFractal.tscn"), i.position, Global.main.game_area, {
+		outerFractals.append(Utils.spawn(load("res://mods-unpacked/Spaghet-prism/extensions/src/enemy/prism/prismFractal.tscn"), i.position, Global.main.game_area, {
 			markedPlayer = targetPlayer,
 			prism = self,
 			point = i,
-			colorVar = count
+			count = count
 		}))
+		fractals.append(outerFractals[0])
 		count += 1
 
 func updateWindows():
@@ -143,18 +166,33 @@ func _integrate_forces(state):
 	angle = (targetPlayer.position - position).normalized()
 	
 	if lastAlive:
-		speed = 10.0 * min(100, position.distance_to(targetPlayer.position))
+		if callAtk:
+			#Last alive slowdown speed
+			speed = 12.5 * min(100, tpPos)
+			
+			if isFinal:
+				global_position = dashPos
+				Utils.spawn(preload("res://src/element/enemy_shockwave/enemy_shockwave.tscn"), position, get_parent(), {
+					points = 36.0, 
+					startRadius = 60.0, 
+					endRadius = 230.0, 
+					startWidth = 24.0, 
+					endWidth = 1.0, 
+					outline = true})
+				Audio.play(preload("res://src/sounds/pound.ogg"), 0.6, 1.0)
+				isFinal = false
+		else:
+			#Last alive base speed
+			speed = 20.0 * min(100, position.distance_to(targetPlayer.position))
 	else:
+		#Normal base speed
 		speed = 10.0 * min(100, position.distance_to(targetPlayer.position) - dist)
-	speed *= pow((min(1.0, max(0.0, 3.0 - 1.0) / 8.0)), 2.0)
+		
+	speed *= 0.0625
 	
 	var vel = angle * speed
 	
 	linear_velocity = vel
-	
-	if cooldown <= 0.0:
-		linear_velocity *= 10.0
-		cooldown = 8.0
 	
 	linear_velocity *= Global.timescale
 	angular_velocity *= Global.timescale
@@ -177,30 +215,93 @@ func _body_exited_large(body):
 func _process(delta):
 	delta *= Global.timescale
 	
-	time += delta * frequency
-	prismFloat.y = sin(time * 2.0 + TAU/5.0) * amplitude
-	prismPos.y = 0 + prismFloat.y
-	
 	area_2D.position = prismPos
 	sprite.position = prismPos
 	collideShape.position = prismPos
 	
+	#Inner ring teleport
 	if isTP:
 		position = Game.randomSpawnLocation(400.0, 300.0)
 		isTP = false
 	
+	#Outer ring spin factor
 	if spinFast:
 		spinFactor = 5.0
 	else:
 		spinFactor = 1.0
 	
+	#Last alive (Fractals all gone)
 	for f in fractals:
-		if is_instance_valid(f):
-			break
 		lastAlive = true
-		
+		if is_instance_valid(f):
+			lastAlive = false
+			break
+	
+	#Dash cooldown
 	if lastAlive:
 		cooldown -= 1.0 * delta
+		
+	#Calls every dash
+	if cooldown <= 0.0:
+		callAtk = true
+		slowDown = 4.0
+		
+		tpPos = targetPlayer.position.distance_to(position) - 200.0
+		
+		tpTimer = 0.5
+		dashFrom = position
+		dashTo = position
+		dashLinePoints = [dashFrom]
+		dashLinePointsEx = []
+		dash_line.points = [Vector2.ZERO, Vector2.ZERO]
+		dash_line_2.points = dash_line.points
+		
+		dash_line.visible = true
+		dash_line_2.visible = true
+		
+		cooldown = 10.0
+	
+	#Runs for duration of slowdown
+	if callAtk:
+		slowDown -= 1.0 * delta
+		
+		#if slowDown <= 0.6 and slowDown >= 0.5:
+			#dashPos = targetPlayer.position
+		
+		#Calls after 4s slowdown
+		if slowDown <= 0.0:
+			dashPos = targetPlayer.position
+			isFinal = true
+			callAtk = false
+	
+	#Dash handler - calls after 4s cooldown
+	if isFinal:
+		tpTimer -= 1.0 * delta
+		var t = 0.0
+		
+		if tpTimer > -0.1:
+			dashTo = position
+			if dashLinePoints.size() == 0:
+				dashLinePoints.push_front(position)
+			else:
+				if dashLinePoints.front().distance_to(position) > 10.0:
+					dashLinePoints.push_front(position.lerp(dashLinePoints.front(), 0.1))
+			
+			dashLinePointsEx = [position] + dashLinePoints
+		if tpTimer > 0.0:
+			t = 1.0
+		else:
+			t = 1.0-TorCurve.run((0.0-tpTimer)/0.5, 1, 1, 1)
+		
+		if dashLinePointsEx.size() > 1:
+			dash_line.points = Utils.clipLine(dashLinePointsEx, 0.0, t, false)
+		
+		dash_line_2.points = dash_line.points
+		
+		if tpTimer < -0.5:
+			isFinal = false
+			dash_line.visible = false
+			dash_line_2.visible = false
 	
 	updateWindows()
 	queue_redraw()
