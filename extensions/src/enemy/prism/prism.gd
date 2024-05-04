@@ -54,17 +54,10 @@ var slowDown := 4.0
 var tpTimer := 0.5
 var tpPos := 0.0
 var isFinal := false
-
-@onready var dash_line = $dashLine
-@onready var dash_line_2 = $dashLine2
-var dashLinePoints:Array[Vector2] = []
-var dashLinePointsEx:Array = []
-
-var dashFrom := Vector2.ZERO
-var dashFromP := Vector2.ZERO
-var dashTo := Vector2.ZERO
+var runOnce := false
 
 var dashPos := Vector2.ZERO
+var lastPos := Vector2.ZERO
 
 var angle := Vector2.ZERO
 
@@ -89,6 +82,9 @@ var healthTarget := 32
 var scaleAmount := 1.0
 var alphaAmount := 1.0
 
+var colorValue := Color.WHITE
+var hue := 0.0
+
 var blinkBuffer := true
 var frozen := false
 
@@ -105,9 +101,6 @@ func _ready():
 	for i in targetPlayer.get_children():
 		if i.get_name() == "Melee":
 			dist = 375.0
-			
-	dash_line.reparent.call_deferred(Global.gameArea, false)
-	dash_line_2.reparent.call_deferred(Global.gameArea, false)
 	
 	var pos = Game.randomSpawnLocation(Vector2(300, 300).x, 300.0)
 	position = pos
@@ -168,22 +161,28 @@ func _integrate_forces(state):
 	if lastAlive:
 		if callAtk:
 			#Last alive slowdown speed
-			speed = 12.5 * min(100, tpPos)
-			
-			if isFinal:
-				global_position = dashPos
-				Utils.spawn(preload("res://src/element/enemy_shockwave/enemy_shockwave.tscn"), position, get_parent(), {
-					points = 36.0, 
-					startRadius = 60.0, 
-					endRadius = 230.0, 
-					startWidth = 24.0, 
-					endWidth = 1.0, 
-					outline = true})
-				Audio.play(preload("res://src/sounds/pound.ogg"), 0.6, 1.0)
-				isFinal = false
+			#speed = 12.5 * min(100, tpPos)
+			pass
 		else:
 			#Last alive base speed
-			speed = 20.0 * min(100, position.distance_to(targetPlayer.position))
+			speed = 15.0 * min(100, position.distance_to(targetPlayer.position))
+			
+			if callAtk:
+				speed *= 0.95
+				print(speed)
+			
+		if runOnce:
+			global_position = dashPos
+			Utils.spawn(preload("res://src/element/enemy_shockwave/enemy_shockwave.tscn"), position, get_parent(), {
+				points = 36.0, 
+				startRadius = 50.0, 
+				endRadius = 150.0, 
+				startWidth = 24.0, 
+				endWidth = 1.0,
+				color = Color.WHITE,
+				outline = true})
+			Audio.play(preload("res://src/sounds/pound.ogg"), 0.6, 1.0)
+			runOnce = false
 	else:
 		#Normal base speed
 		speed = 10.0 * min(100, position.distance_to(targetPlayer.position) - dist)
@@ -245,21 +244,10 @@ func _process(delta):
 	if cooldown <= 0.0:
 		callAtk = true
 		slowDown = 4.0
+		tpTimer = 0.5
+		cooldown = 10.0
 		
 		tpPos = targetPlayer.position.distance_to(position) - 200.0
-		
-		tpTimer = 0.5
-		dashFrom = position
-		dashTo = position
-		dashLinePoints = [dashFrom]
-		dashLinePointsEx = []
-		dash_line.points = [Vector2.ZERO, Vector2.ZERO]
-		dash_line_2.points = dash_line.points
-		
-		dash_line.visible = true
-		dash_line_2.visible = true
-		
-		cooldown = 10.0
 	
 	#Runs for duration of slowdown
 	if callAtk:
@@ -268,46 +256,39 @@ func _process(delta):
 		#if slowDown <= 0.6 and slowDown >= 0.5:
 			#dashPos = targetPlayer.position
 		
+		if slowDown >= 1.0 and slowDown <= 1.25:
+			dashPos = targetPlayer.global_position
+		
+		#Gets position for trail before TP
+		if slowDown >= 0.0 and slowDown <= 0.25:
+			lastPos = global_position
+		
 		#Calls after 4s slowdown
 		if slowDown <= 0.0:
-			dashPos = targetPlayer.position
 			isFinal = true
+			runOnce = true
 			callAtk = false
 	
 	#Dash handler - calls after 4s cooldown
 	if isFinal:
 		tpTimer -= 1.0 * delta
-		var t = 0.0
 		
-		if tpTimer > -0.1:
-			dashTo = position
-			if dashLinePoints.size() == 0:
-				dashLinePoints.push_front(position)
-			else:
-				if dashLinePoints.front().distance_to(position) > 10.0:
-					dashLinePoints.push_front(position.lerp(dashLinePoints.front(), 0.1))
-			
-			dashLinePointsEx = [position] + dashLinePoints
-		if tpTimer > 0.0:
-			t = 1.0
-		else:
-			t = 1.0-TorCurve.run((0.0-tpTimer)/0.5, 1, 1, 1)
-		
-		if dashLinePointsEx.size() > 1:
-			dash_line.points = Utils.clipLine(dashLinePointsEx, 0.0, t, false)
-		
-		dash_line_2.points = dash_line.points
-		
-		if tpTimer < -0.5:
+		if tpTimer <= 0.0:
 			isFinal = false
-			dash_line.visible = false
-			dash_line_2.visible = false
-	
+		
 	updateWindows()
-	queue_redraw()
-	
-	#var rect = Game.screenRect.grow(-40)
-	#position = position.clamp(rect.position, rect.end)
+
+func _draw():
+	if isFinal:
+		hue += 0.75 * delta
+		colorValue = Color.from_hsv(hue, 0.66, 1.0)
+		
+		var amount = pow(min(1, tpTimer / 0.3), 3.0)
+		var iAmount = 1.0 - amount
+		
+		draw_circle(dashPos, 100.0, colorValue)
+		draw_circle(lastPos, 100.0, colorValue)
+		draw_line(lastPos, dashPos, colorValue, 100.0)
 
 func kill(soft := false):
 	for i in fractals:
